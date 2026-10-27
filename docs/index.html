@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<title>每日要闻</title>
+<meta name="theme-color" content="#0e1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="每日要闻">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png">
+<style>
+:root{
+  --bg:#0e1116; --card:#171b22; --card2:#1e242d; --line:#252c36;
+  --fg:#e8ecf2; --fg2:#9aa5b4; --fg3:#6b7686;
+  --acc:#4c9aff; --acc2:#ff6a5e; --ok:#3ddc97;
+  --r:16px;
+}
+@media (prefers-color-scheme:light){
+  :root{ --bg:#f4f6f9; --card:#fff; --card2:#f0f3f7; --line:#e6eaf0;
+         --fg:#14181f; --fg2:#5d6878; --fg3:#8b95a3; --acc:#1a73e8; --acc2:#e5432e; }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--fg);
+  font:16px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom));
+  overscroll-behavior-y:contain;
+}
+header{
+  position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);
+  border-bottom:1px solid var(--line);
+  padding:calc(10px + env(safe-area-inset-top)) 16px 0;
+}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{font-size:19px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+.brand i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);display:inline-block}
+.meta{color:var(--fg3);font-size:12px;margin:4px 0 10px}
+.acts{display:flex;gap:6px}
+.acts button{
+  background:var(--card2);border:0;color:var(--fg2);width:36px;height:36px;border-radius:12px;
+  font-size:17px;display:grid;place-items:center;cursor:pointer;transition:.2s;
+}
+.acts button:active{transform:scale(.92)}
+.acts button.spin{animation:spin .6s ease}
+@keyframes spin{to{transform:rotate(360deg)}}
+.acts button.on{color:var(--acc);background:color-mix(in srgb,var(--acc) 16%,var(--card2))}
+.tabs{display:flex;gap:4px;padding-bottom:0}
+.tabs button{
+  flex:1;background:none;border:0;padding:10px 4px 12px;color:var(--fg3);font-size:15px;font-weight:600;
+  position:relative;cursor:pointer;font-family:inherit;
+}
+.tabs button b{font-weight:400;font-size:12px;opacity:.6;margin-left:3px}
+.tabs button.active{color:var(--fg)}
+.tabs button.active::after{
+  content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:26px;height:3px;border-radius:3px;background:var(--acc);
+}
+.tip{margin:12px 16px 0;padding:9px 12px;border-radius:12px;background:var(--card2);
+     color:var(--fg2);font-size:12.5px;line-height:1.5;display:none}
+.tip.show{display:block}
+main{padding:12px 16px 0}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px 15px;margin-bottom:10px;text-decoration:none;color:inherit;display:block;
+  transition:transform .15s ease,background .15s;
+}
+.card:active{transform:scale(.985);background:var(--card2)}
+.card h3{margin:0 0 8px;font-size:16.5px;line-height:1.45;font-weight:600;letter-spacing:.2px}
+.card .row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg3);flex-wrap:wrap}
+.src{color:var(--fg2)}
+.card .row .sep{opacity:.4}
+.kw{padding:1px 7px;border-radius:6px;background:color-mix(in srgb,var(--acc2) 14%,transparent);
+    color:var(--acc2);font-size:11.5px;font-weight:600}
+.card.fresh{border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}
+.empty{color:var(--fg3);text-align:center;padding:60px 0;font-size:14px;line-height:1.8}
+.skel{background:var(--card);border-radius:var(--r);height:86px;margin-bottom:10px;
+      animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:.95}}
+footer{color:var(--fg3);font-size:11.5px;text-align:center;padding:18px 24px 8px;line-height:1.7}
+.toast{
+  position:fixed;left:50%;bottom:calc(32px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
+  background:var(--card2);color:var(--fg);padding:9px 16px;border-radius:20px;font-size:13px;
+  border:1px solid var(--line);opacity:0;pointer-events:none;transition:.25s;z-index:50;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:60;align-items:flex-end}
+.sheet.show{display:flex}
+.sheet .box{background:var(--card);width:100%;border-radius:20px 20px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));}
+.sheet h4{margin:0 0 10px;font-size:16px}
+.sheet p{color:var(--fg2);font-size:14px;line-height:1.75;margin:6px 0}
+.sheet .btn{width:100%;margin-top:14px;padding:13px;border-radius:14px;border:0;background:var(--acc);color:#fff;font-size:15px;font-weight:600;font-family:inherit}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><i></i>每日要闻</div>
+    <div class="acts">
+      <button id="install" title="安装到桌面" style="display:none">⤓</button>
+      <button id="refresh" title="刷新">⟳</button>
+    </div>
+  </div>
+  <div class="meta"><span id="date"></span> · 更新于 <span id="updated">--</span></div>
+  <nav class="tabs">
+    <button data-tab="cn" class="active">国家<b id="c-cn"></b></button>
+    <button data-tab="world">国际<b id="c-world"></b></button>
+    <button data-tab="me">与我相关<b id="c-me"></b></button>
+  </nav>
+</header>
+<div class="tip" id="tip"></div>
+<main id="list"></main>
+<footer>内容来自公开 RSS 源，点击卡片查看原文<br>每天 8:00 自动推送 · 打开即更新</footer>
+<div class="toast" id="toast"></div>
+<div class="sheet" id="sheet">
+  <div class="box">
+    <h4>把「每日要闻」装到手机桌面</h4>
+    <p><b>iPhone：</b>用 Safari 打开本页 → 点底部「分享」→ 下滑选「添加到主屏幕」。</p>
+    <p><b>Android：</b>用 Chrome 打开本页 → 右上角「⋮」→「添加到主屏幕 / 安装应用」。</p>
+    <p>安装后是一个独立图标，点开即看，断网也能读上次的内容。</p>
+    <button class="btn" onclick="document.getElementById('sheet').classList.remove('show')">知道了</button>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const SECTIONS = {cn:'国家', world:'国际', me:'与我相关'};
+const TIPS = {
+  cn:'聚焦国内时政、政策与部委动向。',
+  world:'国际局势、地缘冲突与全球市场。',
+  me:'按「就业 / 升学 / 考公 / 落户 / 补贴 / 风口行业」关键词，从全网自动筛出与你相关的条目。'
+};
+let data = null, tab = localStorage.getItem('tab') || 'cn';
+
+function fmtTab(t){ return t; }
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function render(){
+  const list = $('#list');
+  if(!data){ list.innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>'; return; }
+  const items = (data.sections && data.sections[tab]) || [];
+  $('#c-cn').textContent = data.sections?.cn?.length ?? '';
+  $('#c-world').textContent = data.sections?.world?.length ?? '';
+  $('#c-me').textContent = data.sections?.me?.length ?? '';
+  $('#date').textContent = data.date || '';
+  $('#updated').textContent = data.updated ? data.updated.split(' ')[1] : '--';
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  $('#tip').textContent = TIPS[tab];
+  $('#tip').classList.add('show');
+
+  if(!items.length){
+    list.innerHTML = '<div class="empty">这一栏暂时没有内容<br>下拉或点右上角 ⟳ 试试</div>';
+    return;
+  }
+  const now = Date.now()/1000;
+  list.innerHTML = items.map(it=>{
+    const fresh = it.ts && (now - it.ts) < 7200 ? ' fresh' : '';
+    const kws = (it.k||[]).map(k=>`<span class="kw">${k}</span>`).join('');
+    return `<a class="card${fresh}" href="${it.u}" target="_blank" rel="noopener noreferrer">
+      <h3>${it.t}</h3>
+      <div class="row"><span class="src">${it.s}</span><span class="sep">·</span><span>${it.d}</span>${kws}</div>
+    </a>`;
+  }).join('');
+  window.scrollTo({top:0});
+}
+
+async function load(manual){
+  try{
+    const r = await fetch('./news.json?t=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) throw new Error(r.status);
+    data = await r.json();
+    localStorage.setItem('cache', JSON.stringify(data));
+    render();
+    if(manual) toast('已更新到最新');
+  }catch(e){
+    const c = localStorage.getItem('cache');
+    if(c){ data = JSON.parse(c); render(); if(manual) toast('网络不佳，显示上次内容'); }
+    else if(!data){ $('#list').innerHTML = '<div class="empty">加载失败<br>请检查网络后点右上角 ⟳ 重试</div>'; }
+  }
+}
+
+document.querySelectorAll('.tabs button').forEach(b=>{
+  b.onclick = ()=>{ tab = b.dataset.tab; localStorage.setItem('tab',tab); render(); };
+});
+$('#refresh').onclick = ()=>{
+  const b = $('#refresh');
+  b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin');
+  load(true);
+};
+
+// 下拉刷新
+let sy=0, pulling=false;
+addEventListener('touchstart', e=>{ if(scrollY<=0){ sy=e.touches[0].clientY; pulling=true; } }, {passive:true});
+addEventListener('touchend', e=>{
+  if(!pulling) return; pulling=false;
+  if(e.changedTouches[0].clientY - sy > 70){ load(true); }
+}, {passive:true});
+
+// 安装
+let deferred=null;
+addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferred=e; $('#install').style.display='grid'; });
+$('#install').onclick = async ()=>{
+  if(deferred){ deferred.prompt(); deferred=null; $('#install').style.display='none'; }
+  else $('#sheet').classList.add('show');
+};
+if(location.protocol==='file:') $('#install').style.display='none';
+setTimeout(()=>{ if(!deferred && !matchMedia('(display-mode:standalone)').matches) $('#install').style.display='grid'; }, 3000);
+
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// 先渲染缓存，再拉最新
+const cached = localStorage.getItem('cache');
+if(cached){ try{ data = JSON.parse(cached); render(); }catch(e){} }
+render();
+load(false);
+setInterval(()=>load(false), 10*60*1000);
+</script>
+</body>
+</html>
