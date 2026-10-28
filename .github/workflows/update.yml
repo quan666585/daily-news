@@ -31,6 +31,24 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/news.json
+          # 心跳文件：保证每天都有提交，避免 GitHub 因 60 天无提交停用定时任务
+          date -u "+%Y-%m-%d %H:%M UTC" > docs/.last-run
+          git add docs/news.json docs/.last-run
           git diff --cached --quiet || git commit -m "chore: 更新要闻 $(date -u +%F)"
           git push
+
+      - name: 汇总
+        if: always()
+        run: |
+          echo "### 每日要闻" >> $GITHUB_STEP_SUMMARY
+          echo "上次更新：$(cat docs/.last-run 2>/dev/null || echo 未知)" >> $GITHUB_STEP_SUMMARY
+          python - <<'PY' >> $GITHUB_STEP_SUMMARY
+          import json
+          try:
+              d = json.load(open("docs/news.json", encoding="utf-8"))
+              print(f"\n内容时间：**{d.get('updated')}**，条数：{d.get('counts')}")
+              if d.get("errors"):
+                  print(f"\n失败源：{d['errors']}")
+          except Exception as e:
+              print(f"\n读取 news.json 失败：{e}")
+          PY
