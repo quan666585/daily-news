@@ -19,13 +19,59 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: 抓取 RSS 并推送（PushPlus / Bark / Telegram）
+      - name: 抓取 RSS 生成 news.json
+        run: python fetch_news.py
+
+      - name: 推送到钉钉群
         env:
-          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
-          BARK_URL: ${{ secrets.BARK_URL }}
-          TG_TOKEN: ${{ secrets.TG_TOKEN }}
-          TG_CHAT: ${{ secrets.TG_CHAT }}
-        run: python fetch_news.py --push
+          DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
+          DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
+        run: |
+          python - <<'PY'
+          import os, json, time, hmac, hashlib, base64, urllib.parse, urllib.request, sys
+
+          hook = (os.environ.get("DINGTALK_WEBHOOK") or "").strip()
+          sec = (os.environ.get("DINGTALK_SECRET") or "").strip()
+          if not hook:
+              print("未配置 DINGTALK_WEBHOOK，跳过钉钉推送")
+              sys.exit(0)
+
+          data = json.load(open("docs/news.json", encoding="utf-8"))
+          quota = {"cn": 5, "world": 3, "me": 3}
+          label = {"cn": "国家", "world": "国际", "me": "与我相关"}
+          lines = ["### 每日要闻 · %s" % data.get("date", ""), ""]
+          total = 0
+          for key in ("cn", "world", "me"):
+              items = (data.get("sections") or {}).get(key, [])[:quota[key]]
+              if not items:
+                  continue
+              lines.append("**%s**" % label[key])
+              for it in items:
+                  total += 1
+                  t = it["t"].replace("[", "（").replace("]", "）")
+                  lines.append("%d. [%s](%s)" % (total, t, it["u"]))
+              lines.append("")
+          lines.append("> 共 %d 条 · 更新于 %s" % (total, data.get("updated", "")))
+
+          url = hook
+          if sec:
+              ts = str(round(time.time() * 1000))
+              sign = urllib.parse.quote_plus(base64.b64encode(hmac.new(
+                  sec.encode("utf-8"),
+                  ("%s\n%s" % (ts, sec)).encode("utf-8"),
+                  hashlib.sha256).digest()))
+              url = "%s&timestamp=%s&sign=%s" % (hook, ts, sign)
+
+          body = json.dumps({"msgtype": "markdown", "markdown": {
+              "title": "每日要闻 · %s" % data.get("date", ""),
+              "text": "\n".join(lines)}}, ensure_ascii=False).encode("utf-8")
+          req = urllib.request.Request(url, data=body,
+                                       headers={"Content-Type": "application/json"})
+          resp = json.loads(urllib.request.urlopen(req, timeout=15).read().decode("utf-8"))
+          print("[dingtalk]", resp)
+          if resp.get("errcode") != 0:
+              sys.exit("钉钉返回错误：%s" % resp)
+          PY
 
       - name: 把新的 news.json 提交回仓库
         run: |
